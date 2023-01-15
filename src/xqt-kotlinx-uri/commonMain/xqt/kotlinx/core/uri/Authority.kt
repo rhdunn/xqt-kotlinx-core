@@ -2,6 +2,15 @@
 package xqt.kotlinx.core.uri
 
 /**
+ * The host part of the URI authority is invalid.
+ *
+ * @param host the host name or IP address
+ */
+class InvalidHost(val host: String) : RuntimeException("Invalid host: $host")
+
+internal fun invalidHost(host: String): Nothing = throw InvalidHost(host)
+
+/**
  * The port part of the URI authority is invalid.
  *
  * @param port the port number
@@ -71,11 +80,14 @@ data class Authority(
         fun parse(authority: String): Authority {
             val (userinfo, hostAndPort) = parseUserInfo(authority)
             val (host, port) = parseHostAndPost(hostAndPort)
-            return Authority(
-                userinfo = userinfo,
-                host = host,
-                port = port
-            )
+            return when {
+                host.startsWith('[') && !host.endsWith(']') -> invalidHost(host)
+                else -> Authority(
+                    userinfo = userinfo,
+                    host = host,
+                    port = port
+                )
+            }
         }
 
         private fun parseUserInfo(

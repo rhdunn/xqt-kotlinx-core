@@ -17,6 +17,15 @@ data class Uri(
     /**
      * The URI authority.
      *
+     * For hierarchical URIs (http, https, etc.), the authority is always
+     * present. An empty authority has the host set to `""`.
+     *
+     * For non-hierarchical URIs (urn, mailto, etc.), the authority is
+     * always null.
+     *
+     * Note that in KDE file URIs are not hierarchical, while in other
+     * environments they are hierarchical.
+     *
      * @see <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.2">RFC 3986 (3.2) Authority</a>
      */
     val authority: Authority? = null,
@@ -42,7 +51,10 @@ data class Uri(
      */
     val fragment: String? = null
 ) {
-    override fun toString(): String = "$scheme:$path"
+    override fun toString(): String = when {
+        authority != null -> "$scheme://$authority$path"
+        else -> "$scheme:$path"
+    }
 
     companion object {
         /**
@@ -51,14 +63,27 @@ data class Uri(
          * @see <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC 3986 Uniform Resource Identifier (URI): Generic Syntax</a>
          */
         fun parse(uri: String): Uri {
-            val (scheme, path) = parseScheme(uri)
-            return Uri(
-                scheme = scheme,
-                authority = null,
-                path = path,
-                query = null,
-                fragment = null
-            )
+            val (scheme, authorityAndPath) = parseScheme(uri)
+            return when {
+                authorityAndPath.startsWith("//") -> {
+                    val (authority, pathAndQuery) = parseAuthority(authorityAndPath)
+                    Uri(
+                        scheme = scheme,
+                        authority = authority,
+                        path = pathAndQuery,
+                        query = null,
+                        fragment = null
+                    )
+                }
+
+                else -> Uri(
+                    scheme = scheme,
+                    authority = null,
+                    path = authorityAndPath,
+                    query = null,
+                    fragment = null
+                )
+            }
         }
 
         private fun parseScheme(uri: String): Pair<UriScheme, String> = when (val index = uri.indexOf(':')) {
@@ -67,6 +92,15 @@ data class Uri(
                 val scheme = uri.substring(0, index)
                 val path = uri.substring(index + 1)
                 UriScheme.valueOf(scheme) to path
+            }
+        }
+
+        private fun parseAuthority(uri: String): Pair<Authority, String> = when (val index = uri.indexOf('/', 2)) {
+            -1 -> Authority.parse(uri.substring(2)) to ""
+            else -> {
+                val authority = uri.substring(2, index)
+                val path = uri.substring(index)
+                Authority.parse(authority) to path
             }
         }
     }

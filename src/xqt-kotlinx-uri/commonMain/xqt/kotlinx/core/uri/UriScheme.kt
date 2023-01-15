@@ -20,9 +20,17 @@ data class UriScheme(val name: String) {
         val URN: UriScheme = UriScheme("urn")
 
         /**
+         * The "file" URI scheme.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc8089">RFC 8089 The "file" URI Scheme</a>
+         */
+        val File: UriScheme = UriScheme("file")
+
+        /**
          * Lookup the URI scheme.
          */
         fun valueOf(name: String): UriScheme = when (name) {
+            File.name -> File
             URN.name -> URN
             else -> UriScheme(name)
         }

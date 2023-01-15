@@ -8,6 +8,20 @@ package xqt.kotlinx.core.uri
  */
 data class Authority(
     /**
+     * The user information subcomponent.
+     *
+     * The userinfo subcomponent may consist of a username and, optionally,
+     * scheme-specific information about how to gain authorization to access
+     * the resource.
+     *
+     * Use of the format "user:password" in the userinfo field is
+     * deprecated.
+     *
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.2.1">RFC 3986 (3.2.1) User Information</a>
+     */
+    val userinfo: String? = null,
+
+    /**
      * The host subcomponent.
      *
      * The host subcomponent of authority is identified by an IP literal
@@ -34,9 +48,11 @@ data class Authority(
      */
     val port: Int? = null
 ) {
-    override fun toString(): String = when (port) {
-        null -> host
-        else -> "$host:$port"
+    override fun toString(): String = when {
+        userinfo == null && port == null -> host
+        userinfo == null -> "$host:$port"
+        port == null -> "$userinfo@$host"
+        else -> "$userinfo@$host:$port"
     }
 
     companion object {
@@ -44,11 +60,24 @@ data class Authority(
          * Parse the authority part of a URI.
          */
         fun parse(authority: String): Authority {
-            val (host, port) = parseHostAndPost(authority)
+            val (userinfo, hostAndPort) = parseUserInfo(authority)
+            val (host, port) = parseHostAndPost(hostAndPort)
             return Authority(
+                userinfo = userinfo,
                 host = host,
                 port = port
             )
+        }
+
+        private fun parseUserInfo(
+            authority: String
+        ): Pair<String?, String> = when (val index = authority.indexOf('@')) {
+            -1 -> null to authority
+            else -> {
+                val userinfo = authority.substring(0, index)
+                val host = authority.substring(index + 1)
+                userinfo to host
+            }
         }
 
         private fun parseHostAndPost(authority: String): Pair<String, Int?> = when {

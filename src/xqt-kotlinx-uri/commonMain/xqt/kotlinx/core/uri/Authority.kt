@@ -2,6 +2,15 @@
 package xqt.kotlinx.core.uri
 
 /**
+ * The port part of the URI authority is invalid.
+ *
+ * @param port the port number
+ */
+class InvalidPortNumber(val port: String) : RuntimeException("Invalid port number: $port")
+
+internal fun invalidPortNumber(port: String): Nothing = throw InvalidPortNumber(port)
+
+/**
  * The authority part of a URI.
  *
  * @see <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.2">RFC 3986 (3.2) Authority</a>
@@ -87,7 +96,7 @@ data class Authority(
                 else -> {
                     val host = authority.substring(0, portIndex + 1)
                     val port = authority.substring(portIndex + 2)
-                    host to port.toIntOrNull()
+                    host to (port.toIntOrNull() ?: invalidPortNumber(port))
                 }
             }
 
@@ -97,7 +106,7 @@ data class Authority(
                 else -> {
                     val host = authority.substring(0, portIndex)
                     val port = authority.substring(portIndex + 1)
-                    host to port.toIntOrNull()
+                    host to (port.toIntOrNull() ?: invalidPortNumber(port))
                 }
             }
         }

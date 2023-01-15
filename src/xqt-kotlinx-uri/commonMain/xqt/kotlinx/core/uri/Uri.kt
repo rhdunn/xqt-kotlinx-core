@@ -41,4 +41,33 @@ data class Uri(
      * @see <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.5">RFC 3986 (3.5) Fragment</a>
      */
     val fragment: String? = null
-)
+) {
+    override fun toString(): String = "$scheme:$path"
+
+    companion object {
+        /**
+         * Parse a Universal Resource Identifier (URI).
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC 3986 Uniform Resource Identifier (URI): Generic Syntax</a>
+         */
+        fun parse(uri: String): Uri {
+            val (scheme, path) = parseScheme(uri)
+            return Uri(
+                scheme = scheme,
+                authority = null,
+                path = path,
+                query = null,
+                fragment = null
+            )
+        }
+
+        private fun parseScheme(uri: String): Pair<UriScheme, String> = when (val index = uri.indexOf(':')) {
+            -1 -> UriScheme.valueOf(uri) to ""
+            else -> {
+                val scheme = uri.substring(0, index)
+                val path = uri.substring(index + 1)
+                UriScheme.valueOf(scheme) to path
+            }
+        }
+    }
+}
